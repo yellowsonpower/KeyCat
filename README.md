@@ -15,6 +15,12 @@
 ![KeyCat 猫](docs/screenshots/keycat.gif)
 <img src="docs/screenshots/octopus.png" alt="KeyCat 八爪鱼" style="zoom: 33%;" />
 
+## 支持
+
+如果觉得好玩，随意支持，一块钱也是心意（支付宝）：
+
+<img src="docs/screenshots/donate-alipay.jpg" alt="支付宝收款码" width="200">
+
 ## 说明
 
 这是一个从零实现的学习项目，形象和交互参考了一款付费桌面宠物应用，仅供个人使用和内部交流，不用于商业分发，也不包含对方的任何素材。three.js 为 MIT 许可（见 `web/THREE_LICENSE`），Tauri 为 MIT / Apache-2.0 双许可。

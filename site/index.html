@@ -59,19 +59,25 @@
   .hint.gone { opacity: 0; }
 
   /* 接单 / 赞助两块 */
-  .panel { margin-top: 44px; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 26px 26px 28px; }
+  .panel { margin-top: 40px; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 26px 26px 28px; }
   .panel h2 { font-size: 22px; margin: 0 0 6px; }
   .panel .sub { color: var(--ink-2); margin: 0 0 18px; font-size: 15px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
   .box { background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 18px; text-align: center; }
   .box h3 { margin: 0 0 12px; font-size: 16px; }
-  .box img { width: 180px; height: 180px; object-fit: contain; border-radius: 8px; background: #fff; }
+  .qr { width: 190px; height: 190px; object-fit: contain; border-radius: 10px; background: #fff; display: block; margin: 0 auto; padding: 6px; }
   .box p { color: var(--ink-2); font-size: 14px; margin: 14px 0 0; line-height: 1.6; }
-  .box .placeholder { width: 180px; height: 180px; margin: 0 auto; border: 1px dashed var(--line); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--ink-2); font-size: 13px; }
-  .pay-line { color: var(--ink); font-weight: 700; }
-  .pay-note { font-size: 13px; color: var(--ink-2); margin-top: 10px; }
+  .pay-line { color: var(--ink); font-weight: 700; font-size: 15px; }
+  .pay-note { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
   .score-note { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 14px; margin: 0 0 16px; color: var(--ink-2); }
   .score-note b { color: var(--accent); }
+  /* 卖萌比心 */
+  .cute { margin-top: 16px; font-size: 15px; color: var(--ink); line-height: 1.8; }
+  .cute .heart { display: inline-block; color: #ff7eb6; animation: beat 1.4s ease-in-out infinite; }
+  .cute .wink { color: var(--accent); font-weight: 700; }
+  @keyframes beat { 0%,100% { transform: scale(1); } 30% { transform: scale(1.28); } 60% { transform: scale(1); } }
+  .foot-heart { text-align: center; color: var(--ink-2); font-size: 13px; margin-top: 40px; }
+  .foot-heart .heart { color: #ff7eb6; }
 
   @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
   @media (max-width: 520px) { .wrap { padding: 36px 14px 48px; } .btn { width: 100%; justify-content: center; } }
@@ -104,21 +110,27 @@
     <p class="sub">支持定制。定制联系和 AI 交流都在同一个群，扫码进群一起玩。</p>
     <div class="box">
       <h3>微信群（定制 + AI 交流）</h3>
-      <div class="placeholder">微信群二维码<br>（待提供）</div>
-      <p>想改形象、加玩法、做专属桌宠，或者聊 AI、聊桌宠，都在这个群。</p>
+      <img class="qr" src="wechat-group.jpg" alt="微信群二维码">
+      <p>想改形象、加玩法、做专属桌宠，或者聊 AI、聊桌宠，都在这个群。<br>群二维码会过期，失效了来页面看最新的就行。</p>
     </div>
   </div>
 
   <div class="panel">
-    <h2>支付宝赞助</h2>
+    <h2>支付宝赞助 <span class="heart">❤</span></h2>
     <p class="sub">大家高兴的话可以支付宝赞助打分，只接受 0~1 元，多了不好意思。</p>
     <p class="score-note">金额即为分数：转 <b>0.88 元</b> 代表打 <b>88 分</b>，0.5 元就是 50 分，依此类推。</p>
     <div class="box">
-      <img src="donate-alipay.jpg" alt="支付宝收款码">
-      <p class="pay-line">我要拿小钱钱去喂大肥鱼 🐟</p>
-      <p class="pay-note">就想听支付宝到账的声音～</p>
+      <img class="qr" src="donate-alipay.jpg" alt="支付宝收款码">
+      <div class="cute">
+        <span class="wink">（歪头卖萌中～）</span><br>
+        比个心 <span class="heart">❤</span> 给你，谢谢你来玩我的小宠物！<br>
+        我要拿小钱钱去喂大肥鱼 🐟<br>
+        <span class="wink">就想听支付宝到账的声音～</span>
+      </div>
     </div>
   </div>
+
+  <div class="foot-heart">用爱发电，开心就好 <span class="heart">❤</span></div>
 </div>
 
 <script>

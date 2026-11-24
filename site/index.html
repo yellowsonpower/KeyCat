@@ -70,6 +70,8 @@
   .box .placeholder { width: 180px; height: 180px; margin: 0 auto; border: 1px dashed var(--line); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--ink-2); font-size: 13px; }
   .pay-line { color: var(--ink); font-weight: 700; }
   .pay-note { font-size: 13px; color: var(--ink-2); margin-top: 10px; }
+  .score-note { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 14px; margin: 0 0 16px; color: var(--ink-2); }
+  .score-note b { color: var(--accent); }
 
   @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
   @media (max-width: 520px) { .wrap { padding: 36px 14px 48px; } .btn { width: 100%; justify-content: center; } }
@@ -99,24 +101,18 @@
 
   <div class="panel">
     <h2>接单 &amp; 交流</h2>
-    <p class="sub">支持定制。定制请联系，AI 交流也可以进群一起玩。</p>
-    <div class="grid">
-      <div class="box">
-        <h3>定制请联系</h3>
-        <div class="placeholder">微信群二维码<br>（待提供）</div>
-        <p>想改形象、加玩法、做专属桌宠，扫码联系。</p>
-      </div>
-      <div class="box">
-        <h3>AI 交流群</h3>
-        <div class="placeholder">微信群二维码<br>（待提供）</div>
-        <p>聊 AI、聊桌宠、一起交流，扫码进群。</p>
-      </div>
+    <p class="sub">支持定制。定制联系和 AI 交流都在同一个群，扫码进群一起玩。</p>
+    <div class="box">
+      <h3>微信群（定制 + AI 交流）</h3>
+      <div class="placeholder">微信群二维码<br>（待提供）</div>
+      <p>想改形象、加玩法、做专属桌宠，或者聊 AI、聊桌宠，都在这个群。</p>
     </div>
   </div>
 
   <div class="panel">
     <h2>支付宝赞助</h2>
     <p class="sub">大家高兴的话可以支付宝赞助打分，只接受 0~1 元，多了不好意思。</p>
+    <p class="score-note">金额即为分数：转 <b>0.88 元</b> 代表打 <b>88 分</b>，0.5 元就是 50 分，依此类推。</p>
     <div class="box">
       <img src="donate-alipay.jpg" alt="支付宝收款码">
       <p class="pay-line">我要拿小钱钱去喂大肥鱼 🐟</p>

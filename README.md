@@ -10,7 +10,10 @@
 
 一只趴在键盘上的桌面猫：你打字它伸爪按键，动鼠标它扭头看，摸头会闭眼，没人理会睡着，被烦到会用尾巴捶桌。支持 macOS 13+ 和 Windows 10+，除了从 GitHub 检查和下载更新，不联网。
 
-![KeyCat](docs/screenshots/keycat.gif)
+开源版（猫）与八爪鱼版（像素八爪鱼）效果：
+
+![KeyCat 猫](docs/screenshots/keycat.gif)
+![KeyCat 八爪鱼](docs/screenshots/octopus.png)
 
 ## 说明
 

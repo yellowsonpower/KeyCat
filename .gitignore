@@ -16,3 +16,8 @@ win/node_modules/
 win/target/
 win/gen/
 win/out/
+
+# Local dev-only artifacts for the octopus port (backup + preview + test harness)
+web/.backup_creature/
+web/octopus-preview.html
+web/octopus-test.html

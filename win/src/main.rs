@@ -94,6 +94,7 @@ struct Host {
 
 /// Settings with their defaults applied, the same keys and fallbacks as the mac build.
 struct Settings {
+    creature: String,
     style: String,
     coat: String,
     pattern: String,
@@ -122,6 +123,7 @@ impl Host {
         let number = |key: &str| self.store.get(key).and_then(Value::as_f64).filter(|v| v.is_finite());
         let coat = text("coat", "black");
         Settings {
+            creature: text("creature", "cat"),
             style: text("style", "2d"),
             pattern: text(&format!("pattern.{coat}"), "auto"),
             eye: text("eyeColor", "auto"),
@@ -196,6 +198,7 @@ fn js(app: &AppHandle, script: &str) {
 fn push_options(app: &AppHandle) {
     let s = host(app).settings();
     let options = json!({
+        "creature": s.creature,
         "style": s.style,
         "coat": s.coat,
         "pattern": s.pattern,
@@ -655,7 +658,13 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
         (h.settings(), h.hook_ready, h.autostart)
     };
     let coat = s.coat.as_str();
-    let mut items = vec![check(app, format!("set:style={}", json!(if s.style == "3d" { "2d" } else { "3d" })), "立体效果（3D）", s.style == "3d")?];
+    // 生物切换：猫 / 像素八爪鱼，选择由 set:creature=... 存进 store 并推送到页面。
+    let mut items = vec![submenu(app, "生物", choice(app, "creature", &json!(s.creature), &[
+        ("猫咪", json!("cat")),
+        ("像素八爪鱼", json!("octopus")),
+    ])?)?];
+    items.push(separator(app)?);
+    items.push(check(app, format!("set:style={}", json!(if s.style == "3d" { "2d" } else { "3d" })), "立体效果（3D）", s.style == "3d")?);
     items.push(submenu(
         app,
         "毛色",

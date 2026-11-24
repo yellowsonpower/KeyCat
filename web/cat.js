@@ -36,6 +36,11 @@
   body.position.copy(HOME);
   K.scene.add(body);
 
+  // 手臂与尾巴要在世界空间够键，挂在 scene 下。单独放一个无变换分组，
+  // 切换生物时可整体显隐，避免猫的爪/尾残留在新生物身上（不影响世界坐标）。
+  const sceneLayer = new THREE.Group();
+  K.scene.add(sceneLayer);
+
   // A short bean: round haunches, soft sloping shoulders, and a neck that ends inside the head.
   // The outline is a smooth spline sampled finely, so the silhouette has no corners.
   const BODY_H = 1.32;
@@ -355,16 +360,16 @@
   const tailThump = [V(0.42, 0.36, -0.25), V(0.7, 0.16, -0.24), V(0.94, 0.07, -0.14), V(1.12, 0.05, -0.02),
     V(1.28, 0.05, 0.06), V(1.42, 0.06, 0.1)];
   const tailCurve = new THREE.CatmullRomCurve3(tailPts.map(q => q.clone()), false, 'catmullrom', 0.5);
-  const tail = K.limb(K.scene, { segments: 28, radial: 14, fill: fur.tail, outline: rimMat, edge: 0.022, capStart: false });
+  const tail = K.limb(sceneLayer, { segments: 28, radial: 14, fill: fur.tail, outline: rimMat, edge: 0.022, capStart: false });
   const attached = V(0, 0, 0), loose = V(0, 0, 0), tmpTail = V(0, 0, 0);
 
   // Arms live in world space so the paws can reach keys and the mouse wherever the body leans.
   const arms = [-1, 1].map(s => {
     // The outline only starts once the arm is clear of the chest, so the shoulder flows into the
     // body without a seam and the line draws in along the upper arm.
-    const limb = K.limb(K.scene, { segments: 24, radial: 18, fill: fur.arms[s < 0 ? 0 : 1], outline: armRimMat, order: 20,
+    const limb = K.limb(sceneLayer, { segments: 24, radial: 18, fill: fur.arms[s < 0 ? 0 : 1], outline: armRimMat, order: 20,
       edge: t => mix(-0.03, 0.012, smooth(0.14, 0.42, t)) });
-    const { paw, rim } = makePaw(K.scene, 20);
+    const { paw, rim } = makePaw(sceneLayer, 20);
     // Shoulders sit inside the chest, so a hanging arm only shows below the middle of the body.
     return { s, limb, paw, rim, shoulderLocal: V(s * 0.27, 0.94, 0.22), shoulder: V(0, 0, 0),
       c1: V(0, 0, 0), c2: V(0, 0, 0), hand: V(0, 0, 0) };
@@ -541,8 +546,12 @@
     headPivot.position.set(NECK.x + bend.x * w, NECK.y * (1 - bend.squash), NECK.z + bend.z * w);
   }
 
-  K.cat = {
-    body, home: HOME, headPivot, head, ears, eyes, whiskers, hind, arms, blushMat,
+  // 切换生物时统一显隐：body（头/身/胡须/项圈）+ sceneLayer（世界空间的手臂/尾巴）。
+  const setVisible = v => { body.visible = v; sceneLayer.visible = v; };
+
+  // 猫的实现对象：注册为第一个生物实现；K.cat 保留给旧引用兼容。
+  const catImpl = {
+    body, home: HOME, headPivot, head, ears, eyes, whiskers, hind, arms, blushMat, setVisible,
     bend, bendBody, attach, placeHead, placeCollar,
     // World position of the tail tip (for the thump effects).
     tailTip: out => tailCurve.getPoint(1, out),
@@ -550,5 +559,7 @@
     dragMeshes: [bodyMesh, tail.body, ...arms.flatMap(a => [a.limb.body, a.paw]), ...hind],
     updateArm, updateTail, setLook, look,
   };
+  K.cat = catImpl;
+  K.registerCreature('cat', catImpl);
   setLook({});
 })();

@@ -45,6 +45,12 @@ extension AppDelegate {
     }
 
     func buildMenu(_ menu: NSMenu) {
+        // 生物切换：猫 / 像素八爪鱼。选择会记住，并在下次启动时恢复。
+        menu.addItem(submenu("生物", [("猫咪", "cat"), ("像素八爪鱼", "octopus")], selected: creature) {
+            $0.creature = $1
+            $0.updateStatusTitle()
+        })
+        menu.addItem(.separator())
         // Off is the flat 2D sticker look; on adds soft volume shading.
         menu.addItem(toggle("立体效果（3D）", style == "3d") { $0.style = $0.style == "3d" ? "2d" : "3d" })
         menu.addItem(submenu("毛色", [("黑猫", "black"), ("奶牛猫", "tuxedo"), ("橘猫", "orange"), ("蓝灰猫", "grey"),

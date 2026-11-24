@@ -31,6 +31,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, WKScri
         get { CGFloat(defaults.object(forKey: "catScale") as? Double ?? 0.9) }
         set { defaults.set(Double(newValue), forKey: "catScale") }
     }
+    /// The current creature, remembered across launches: "cat" or "octopus".
+    var creature: String {
+        get { defaults.string(forKey: "creature") ?? "cat" }
+        set { defaults.set(newValue, forKey: "creature") }
+    }
     var coat: String {
         get { defaults.string(forKey: "coat") ?? "black" }
         set { defaults.set(newValue, forKey: "coat") }
@@ -105,7 +110,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, WKScri
         panel.orderFrontRegardless()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.title = "🐈‍⬛"
+        updateStatusTitle()
         let menu = NSMenu()
         menu.delegate = self
         statusItem.menu = menu
@@ -190,7 +195,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, WKScri
     }
 
     func pushOptions() {
-        let options: [String: Any] = ["style": style, "coat": coat, "pattern": pattern, "eye": eyeColor, "shine": eyeShine, "blush": blush,
+        let options: [String: Any] = ["creature": creature, "style": style, "coat": coat, "pattern": pattern, "eye": eyeColor, "shine": eyeShine, "blush": blush,
                                       "whiskers": whiskers, "collar": collar,
                                       "privacy": privacy, "sleepAfter": sleepAfter > 0 ? sleepAfter : 1e9,
                                       "tune": tune]
@@ -312,7 +317,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, WKScri
     }
 
     func updateStatusTitle() {
-        statusItem?.button?.title = keyboardAllowed ? "🐈‍⬛" : "🐈‍⬛⚠️"
+        let icon = creature == "octopus" ? "🐙" : "🐈‍⬛"
+        statusItem?.button?.title = keyboardAllowed ? icon : icon + "⚠️"
     }
 
     /// Troubleshooting line in ~/Library/Application Support/KeyCat/status.txt:

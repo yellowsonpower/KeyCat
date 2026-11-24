@@ -2,7 +2,8 @@
 'use strict';
 (() => {
   const { V, mix, clamp, approach, smooth } = K;
-  const { camera, scene, renderer, keyboard, mouseProp, cat } = K;
+  const { camera, scene, renderer, keyboard, mouseProp } = K;
+  const cat = K.creature;  // 生物接口（当前是猫，可切换为八爪鱼）；行为逻辑不变
   // In dev the clock can be frozen and stepped (`cat.freeze()` / `cat.step(s)`) to film motion frame by frame.
   let frozen = null;
   const now = () => frozen ?? performance.now() / 1000;
@@ -402,12 +403,17 @@
     // Excited and curious cats' pupils go wide and round (curious most of all, up to the size set
     // in the 调节 window); cross ones narrow to slits under heavy lids. The pupil never grows past
     // the iris, so it stays a black disc inside a coloured ring.
-    const dilate = Math.min(2.6, mix(1 + 0.25 * S.excite, TUNING.pupilSize / 100, curious) * (1 - 0.5 * cross));
+    // 好奇神态分两种：猫是瞪大圆眼盯住；八爪鱼(squintOnCurious)是眯眼、像近视想看清。
+    const squinting = cat.squintOnCurious ? 1 : 0;  // 生物是否眯眼型（开关）
+    const squint = squinting * curious;             // 当前眯眼程度 0..1，随好奇渐变
+    // 眯眼型好奇时不放大瞳孔，沿用正常尺寸；猫则按调节窗口放大到 pupilSize。
+    const dilate = Math.min(2.6, mix(1 + 0.25 * S.excite, TUNING.pupilSize / 100, curious * (1 - squinting)) * (1 - 0.5 * cross));
     for (const e of cat.eyes) {
       e.iris.visible = e.pupil.visible = e.shine.visible = !closed;
       e.arc.visible = closed;
-      e.group.scale.y = (1 - 0.9 * blink) * (1 - 0.42 * cross) * (1 + 0.1 * curious);
-      e.group.scale.x = 1 + 0.06 * curious;
+      // 眯眼：压扁整组眼睛的高度；瞪眼保持不变
+      e.group.scale.y = (1 - 0.9 * blink) * (1 - 0.42 * cross) * (1 + 0.1 * curious) * (1 - 0.55 * squint);
+      e.group.scale.x = (1 + 0.06 * curious) * (1 + 0.12 * squint);
       let px = P.gazeX.x, py = P.gazeY.x;
       if (focus) {
         const es = screen(e.group.getWorldPosition(tmp2), V());
@@ -511,11 +517,12 @@
 
   // Raycast the pointer: 'pet' over head/ears, 'drag' over the rest, 'none' elsewhere.
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
-  const dragMeshes = [...cat.dragMeshes, ...keyboard.hitMeshes, ...mouseProp.hitMeshes];
   function hitTest(x, y) {
     ndc.set(x / window.innerWidth * 2 - 1, -(y / window.innerHeight) * 2 + 1);
     ray.setFromCamera(ndc, camera);
+    // 动态取当前生物的网格：切换猫/八爪鱼后命中检测要跟着换，不能用启动时的快照。
     if (ray.intersectObjects(cat.petMeshes, false).length) return 'pet';
+    const dragMeshes = [...cat.dragMeshes, ...keyboard.hitMeshes, ...mouseProp.hitMeshes];
     if (ray.intersectObjects(dragMeshes, false).length) return 'drag';
     return 'none';
   }
@@ -573,6 +580,11 @@
       }
     },
     options(o) {
+      // 原生菜单会把记住的生物选择一起推过来；只有真变了才切，避免每次 options 都重置姿态。
+      if (typeof o.creature === 'string' && o.creature !== K.currentCreatureId()) {
+        K.setCreature(o.creature);
+        window.cat.reset();
+      }
       Object.assign(opts, o);
       // `tune` holds only the settings that differ from the defaults, so start from those.
       if (o.tune) {
@@ -604,6 +616,14 @@
       Object.assign(tailTap, { key: null, t0: -100, down: false, landAt: -100, reach: 0, hover: 0.12 });
     },
     hitTest,
+    // 切换生物（'cat' / 'octopus'）。代理会自动把行为层驱动到新实现，这里顺手清掉旧姿态。
+    setCreature(id) {
+      if (!K.setCreature(id)) return false;
+      window.cat.reset();
+      S.busyUntil = now() + 1;
+      return true;
+    },
+    creatureId() { return K.currentCreatureId(); },
     state: S,
   };
   if (K.dev) {
@@ -616,7 +636,12 @@
   }
 
   if (K.dev) {
-    window.addEventListener('keydown', e => { if (!e.repeat) key(e.code, true); });
+    window.addEventListener('keydown', e => {
+      if (e.repeat) return;
+      // dev 专用：按 T 在猫/八爪鱼之间切换，方便验证接口层（正式模式不受影响）。
+      if (e.code === 'KeyT') window.cat.setCreature(K.currentCreatureId() === 'cat' ? 'octopus' : 'cat');
+      else key(e.code, true);
+    });
     window.addEventListener('keyup', e => key(e.code, false));
   }
   if (K.devPointer) {

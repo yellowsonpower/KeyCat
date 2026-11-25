@@ -30,7 +30,7 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJERjI2OTA3Q0I4N0Q5RTQKUldUazJZZkxCMm55dlVUSHBheUI1ZHF3d3BnMmF0dnlWRmhZbERxdDdvRUVzU1VqUnArTVMvUnQK",
-      "endpoints": ["https://github.com/ElloboDK/KeyCat/releases/latest/download/latest.json"],
+      "endpoints": ["https://github.com/yellowsonpower/KeyCat/releases/latest/download/latest.json"],
       "windows": {
         "installMode": "passive"
       }

@@ -71,7 +71,7 @@ jobs:
           cp target/release/bundle/nsis/KeyCat_"$version"_x64-setup.exe out/KeyCat-Windows-Setup.exe
           ls -l out
           [ -f target/release/bundle/nsis/KeyCat_"$version"_x64-setup.exe.sig ] || exit 0
-          url="https://github.com/ElloboDK/KeyCat/releases/download/v$version/KeyCat-Windows-Setup.exe"
+          url="https://github.com/yellowsonpower/KeyCat/releases/download/v$version/KeyCat-Windows-Setup.exe"
           date="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           VERSION="$version" URL="$url" DATE="$date" \
           SIG="$(cat target/release/bundle/nsis/KeyCat_"$version"_x64-setup.exe.sig)" \

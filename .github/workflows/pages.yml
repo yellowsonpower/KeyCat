@@ -4,6 +4,7 @@ name: Pages
 # page's live demo), and stats.json with the download count. Runs again every few hours, so
 # stats.json stays close to the live count the page also asks for. Not on release: that event
 # runs on the tag, and the github-pages environment only accepts deploys from main.
+# Pages/upload artifact actions pinned to v5 (v4 could not find the artifact during the 2026-11-25 incident).
 on:
   push:
     branches: [main]

@@ -49,6 +49,8 @@
   const paws = {
     L: { side: -1, pos: V(-0.36, 0.26, 0.68), from: V(), key: null, t0: -100, dur: 0.08, down: false },
     R: { side: 1, pos: V(0.36, 0.26, 0.68), from: V(), key: null, t0: -100, dur: 0.08, down: false },
+    // 八爪鱼的第二只键盘手专用通道。猫永远不用 M，行为与原来完全一致。
+    M: { side: -1, pos: V(-0.36, 0.26, 0.68), from: V(), key: null, t0: -100, dur: 0.08, down: false },
   };
   for (const p of Object.values(paws)) { p.spring = new Spring(p.pos, 3.2, 0.78); p.last = p.pos.clone(); }
   // The tail presses the space bar: it swings over in `dur`, the key goes down when the tip lands
@@ -101,8 +103,16 @@
       if (S.strokes.filter(s => t - s < 0.15).length >= TUNING.mashKeys) poke(0.3, t);
       return;
     }
-    let side = keyboard.leftHand(code) ? 'R' : 'L';
-    if (mousing(t)) side = 'R';
+    // 猫：左手区键→R、右手区键→L；抓鼠标时只剩一只爪空闲，全部键挤给 R。
+    // 八爪鱼：有独立鼠标手(a→L)，两只键盘手(b→R, d→M)可各按各的，抓鼠标时也不合并。
+    const octo = K.currentCreatureId() === 'octopus';
+    let side;
+    if (octo) {
+      side = keyboard.leftHand(code) ? 'R' : 'M';
+    } else {
+      side = keyboard.leftHand(code) ? 'R' : 'L';
+      if (mousing(t)) side = 'R';
+    }
     const paw = paws[side];
     paw.from.copy(paw.pos);
     paw.key = k;
@@ -257,6 +267,8 @@
     mouseProp.update(dt, S.mouseDown);
     updatePaw('L', paws.L, t, dt);
     updatePaw('R', paws.R, t, dt);
+    // 八爪鱼的第二键盘手：猫从不分配键给 M，更新它也只是一直待机，无副作用。
+    updatePaw('M', paws.M, t, dt);
     updateTailTap(t, dt);
 
     // Excitement: how busy the last two seconds were.
@@ -477,7 +489,11 @@
       fx.sprite.scale.set(s, s, 1);
       fx.sprite.material.opacity = fx.kind === 'bang' ? 1 - smooth(0.5, 1, u) : 0.9 * (1 - u);
     }
-    for (const arm of cat.arms) cat.updateArm(arm, arm.s < 0 ? paws.L.pos : paws.R.pos);
+    for (const arm of cat.arms) {
+      // 八爪鱼的手用 channel 指定专属爪（a→L 鼠标、b→R、d→M）；猫无 channel，沿用原来的按 s 分配。
+      const paw = arm.channel ? paws[arm.channel] : (arm.s < 0 ? paws.L : paws.R);
+      cat.updateArm(arm, paw.pos);
+    }
 
     for (let i = popups.length - 1; i >= 0; i--) {
       const p = popups[i], age = t - p.t0;

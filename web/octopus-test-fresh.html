@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>像素八爪鱼 · 接口层测试</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #241d40; }
+  canvas { display: block; width: 100%; height: 100%; }
+  #hud {
+    position: fixed; left: 14px; top: 12px; z-index: 10; pointer-events: none;
+    color: #e6d9ff; font: 13px/1.7 "Microsoft YaHei", sans-serif;
+    text-shadow: 0 1px 3px #000a;
+  }
+  #hud b { color: #ffd36e; }
+  #panel {
+    position: fixed; left: 14px; top: 88px; z-index: 10;
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  #panel button {
+    pointer-events: auto; cursor: pointer; font: 13px "Microsoft YaHei";
+    color: #fff; background: #6d2fb5; border: 1px solid #a75ce8;
+    border-radius: 5px; padding: 5px 12px;
+  }
+  #panel button:hover { background: #8f4ad8; }
+</style>
+<script>
+  // 在 core.js 读取参数前注入 dev 模式，直接用鼠标/键盘驱动行为层
+  if (!location.search.includes('dev')) {
+    history.replaceState(null, '', location.pathname + '?dev&full&bg=241d40');
+  }
+</script>
+</head>
+<body>
+<div id="hud">
+  <div><b>第二步测试 · 八爪鱼经由 creature 接口被行为层驱动</b></div>
+  <div>移动鼠标：眼睛跟随　点击头顶：摸头　按键：两条触手去按"键"</div>
+  <div>快速晃鼠标 / 点"好奇"：眯眼想看清　乱按键：烦躁捶桌　静止一会：打瞌睡</div>
+</div>
+<div id="panel">
+  <button onclick="window.cat.curiousNow(4)">好奇（眯眼 4 秒）</button>
+  <button onclick="window.cat.reset && window.cat.reset()">复位</button>
+</div>
+<script src="three.min.js?v=202611260027"></script>
+<script src="tuning.js?v=202611260027"></script>
+<script src="core.js?v=202611260027"></script>
+<script src="keyboard.js?v=202611260027"></script>
+<script src="creature.js?v=202611260027"></script>
+<!-- 只加载八爪鱼：它会自动注册为默认生物，行为层经 K.creature 代理驱动它 -->
+<script src="octopus.js?v=202611260027"></script>
+<script src="behavior.js?v=202611260027"></script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 // 像素八爪鱼：实现与猫一致的 creature 接口，让 behavior.js 无需改动即可驱动。
 // 外观沿用 octopus-preview.html 的定稿：低分段紫色球头 + 8 条摆动触手 + 深色方瞳 + 深浅斑纹。
-// 场景没有灯光（猫用 MeshBasicMaterial 平面着色），所以这里也只用 BasicMaterial，
-// 靠"分层色块 + Toon 式明暗贴图"表现像素风的硬色阶，不依赖光照。
+  // 场景没有灯光（猫用 MeshBasicMaterial 平面着色），所以这里也只用 BasicMaterial，
+  // 靠分层色块表现像素风的硬色阶；腿是纯色，不做表面深浅（用户 11/26 要求）。
 'use strict';
 (() => {
   const { V, mix, clamp, smooth } = K;
@@ -13,6 +13,10 @@
   const SHADOW = 0x6d2fb5;      // 头与触手连接处的深紫阴影
   const PUPIL = 0x160b26;       // 瞳孔深色
   const basic = color => new THREE.MeshBasicMaterial({ color });
+
+  // 腿用纯色：不要密集的深浅噪点（用户 11/26 明确否决）。
+  // 8 条腿之间仍沿用原有的奇偶深浅交替，但每条腿自身是一整块纯色。
+  const tentMat = basic;
 
   // 固定种子伪随机：花纹位置每次一致
   let _seed = 20261124;
@@ -142,39 +146,52 @@
   });
 
   // ---- 8 条触手 ----
-  // 每条：一个可变粗细管，每帧重建；深浅两色交替；散布深浅像素点。
+  // 每条：一个可变粗细圆管，每帧重建；纯色腿面 + 明显的大方块像素点（粗糙像素画感）。
   const TENT = 8, SEG = 14, RAD = 6;
+  const PIXEL_DOTS = 6;      // 每条腿的像素方块数：用户要「比较粗糙的像素画」，由 2 加回 6
+  const DOT_SIZE = 0.13;     // 方块边长：原来 0.07 太细小，放大成看得清的像素点
+  // 每环多一列重复顶点（原为噪点纹理的 uv 封口）。几何索引已按 RING 算好，
+  // 现在纹理去掉了也保留，避免动已跑通的圆管构造。
+  const RING = RAD + 1;
   const tentacles = [];
   for (let i = 0; i < TENT; i++) {
     const geo = new THREE.BufferGeometry();
-    const count = (SEG + 1) * RAD;
+    const count = (SEG + 1) * RING;
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
     geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+    const uvs = new Float32Array(count * 2);
+    for (let s = 0; s <= SEG; s++) for (let j = 0; j <= RAD; j++) {
+      const k = s * RING + j;
+      uvs[k * 2] = s / SEG;              // uv 现无贴图使用，仅保留几何结构不变
+      uvs[k * 2 + 1] = j / RAD;
+    }
+    geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
     const idx = [];
     for (let s = 0; s < SEG; s++) for (let r = 0; r < RAD; r++) {
-      const a = s * RAD + r, b = s * RAD + (r + 1) % RAD, c = a + RAD, d = b + RAD;
+      const a = s * RING + r, b = a + 1, c = a + RING, d = b + RING;
       idx.push(a, b, c, b, d, c);
     }
     geo.setIndex(idx);
-    const mesh = new THREE.Mesh(geo, basic(i % 2 ? SKIN_DARK : SKIN));
+    const mesh = new THREE.Mesh(geo, tentMat(i % 2 ? SKIN_DARK : SKIN));
     mesh.frustumCulled = false;
     // 触手挂在 body 上，跟随身体倾斜，但末端摆动在世界空间计算（下面用 body 逆变换）
     body.add(mesh);
     tentacles.push({ mesh, index: i, spots: [] });
-    for (let k = 0; k < 6; k++) {
-      const spot = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.02), basic(spotColor()));
+    for (let k = 0; k < PIXEL_DOTS; k++) {
+      const spot = new THREE.Mesh(new THREE.BoxGeometry(DOT_SIZE, DOT_SIZE, 0.03), basic(spotColor()));
       spot.userData = { at: 0.2 + rnd() * 0.6, angle: rnd() * Math.PI * 2 };
       body.add(spot);
       tentacles[tentacles.length - 1].spots.push(spot);
     }
   }
 
-  // "手"触手：a 专职鼠标、b 负责键盘、d 接管 a 原来的按键活。
+  // "手"触手：a 专职鼠标、b 与 d 各管一只键盘手，分按左右手区的键。
   // 每只手用 id(触手序号) 存自己的目标，避免同 s 的两只手目标互相覆盖。
-  const armLimb = (i, s) => {
+  // channel 指定 behavior 里对应的爪：a→L(鼠标)、b→R(左半键盘)、d→M(右半键盘)。
+  const armLimb = (i, s, channel) => {
     const tent = tentacles[i];
     return {
-      id: i, s, tent,
+      id: i, s, channel, tent,
       shoulderLocal: V(s * 0.3, 0.5, 0.2),
       shoulder: V(0, 0, 0),
       c1: V(0, 0, 0), c2: V(0, 0, 0), hand: V(0, 0, 0),
@@ -182,10 +199,9 @@
       limb: { body: tent.mesh }, paw: tent.mesh, rim: tent.mesh,
     };
   };
-  // a=鼠标手(第4条,正左,s=-1)、b=键盘手(第1条,右前,s=+1)、d=按键手(第3条,左前深色,s=-1)。
-  // d 用 s=-1 才会收到 paws.L 的目标(a 原来的按键)；a 虽同为 s=-1，但在 updateArm 里按鼠标/待机切换。
-  // 于是 a 用鼠标才抓鼠标、平时抬起待机，d 在键盘，职责分离不重叠；b 保持原样。
-  const arms = [armLimb(4, -1), armLimb(1, 1), armLimb(3, -1)];
+  // a=鼠标手(第4条,正左,s=-1,channel L)、b=键盘手(第1条,右前,s=+1,channel R)、
+  // d=键盘手(第3条,左前深色,s=-1,channel M)。三只手各有专属爪通道，互不挤占。
+  const arms = [armLimb(4, -1, 'L'), armLimb(1, 1, 'R'), armLimb(3, -1, 'M')];
 
   // attach：把未弯曲身体坐标点随 bend 变形并放到世界（与猫同签名）
   function attach(local, out) {
@@ -220,6 +236,9 @@
     if (handBlend > 0 && handWorld) {
       body.updateMatrixWorld();
       cP.copy(handWorld).applyMatrix4(body.matrixWorld.clone().invert()); // 目标点转到 body 局部
+      // 末尾整条触手会叠加 bend 偏移，这里先把目标反向抵消，末梢才会精确落在真实键/鼠标上。
+      cP.x -= bend.x * spineWeight(NECK.y);
+      cP.z -= bend.z * spineWeight(NECK.y);
       const outX = Math.cos(baseAng), outZ = Math.sin(baseAng);          // 该触手朝外的水平方向
       const rootX = outX * 0.34, rootZ = outZ * 0.34, rootY = BODY_H - 0.34; // 肩部：根部原位置，不动
       // 肘控制点：从肩向外下方鼓出，形成上臂
@@ -235,6 +254,11 @@
       // handBlend 参与混合：1=完全够向目标，0=回到自然下垂。鼠标手待机时靠它平滑收回。
       out.lerp(bezP, handBlend / 0.92);
     }
+    // 整条触手跟随身体侧弯横移，权重与头部枢轴一致，根部就不会和头断开。
+    // 用 spineWeight(NECK.y) 而非随 t 变化：整条一起平移，避免姿态僵硬失真。
+    const bw = spineWeight(NECK.y);
+    out.x += bend.x * bw;
+    out.z += bend.z * bw;
     return out;
   }
   const tentacleRadius = t => 0.2 * (1 - t) + 0.03 + 0.045 * Math.sin(Math.PI * t);
@@ -256,8 +280,8 @@
       }
       B.crossVectors(T, N).normalize();
       const r = tentacleRadius(s / SEG);
-      for (let j = 0; j < RAD; j++) {
-        const a = j / RAD * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a), k = (s * RAD + j) * 3;
+      for (let j = 0; j <= RAD; j++) {  // 最后一列复制第一列位置，保持环闭合
+        const a = (j % RAD) / RAD * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a), k = (s * RING + j) * 3;
         pos[k]     = pts[s].x + (N.x * ca + B.x * sa) * r;
         pos[k + 1] = pts[s].y + (N.y * ca + B.y * sa) * r;
         pos[k + 2] = pts[s].z + (N.z * ca + B.z * sa) * r;
@@ -286,8 +310,7 @@
 
   // 每只手按 id 存目标；其余触手在 updateTail 里统一重建。
   const handTargets = {};
-  const MOUSE_ID = 4, KEY_D_ID = 3;             // a=鼠标手，d=接管键盘的手
-  const dRest = V(-0.36, 0.26, 0.68);            // d 的键盘待命位（借用 paws.L 原休息位）
+  const MOUSE_ID = 4;                            // a=鼠标手
   const mouseTop = V();                          // 鼠标顶部世界坐标
   const HAND_GRIP = 0.92;                        // 完全够向目标的混合权重
   let mouseGrip = 0;                             // a 的抓握强度：用鼠标→HAND_GRIP，待机→0(自然下垂)
@@ -301,10 +324,8 @@
       const goal = usingMouse ? HAND_GRIP : 0;
       mouseGrip += (goal - mouseGrip) * (usingMouse ? 0.4 : 0.12); // 抓鼠标快、回待机缓
       p.copy(mouseTop);                           // 目标恒为鼠标顶，靠 mouseGrip 决定是否真去够
-    } else if (arm.id === KEY_D_ID) {
-      // d 接管 a 原来的键盘任务；当 behavior 是在抓鼠标(目标≈鼠标顶部)时，d 回到键盘待命。
-      if (p.distanceTo(mouseTop) < 0.25) p.copy(dRest);
     }
+    // b(R) 与 d(M) 各收到 behavior 按左右手区分流的键位目标，直接用即可，无需互相跟随。
     handTargets[arm.id] = p;
     arm.hand.copy(p);
   }

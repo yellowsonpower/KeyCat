@@ -35,6 +35,9 @@
   .btn:hover { transform: translateY(-2px); }
   .btn svg { width: 24px; height: 24px; flex: none; }
   .btn small { display: block; font-weight: 500; font-size: 12px; opacity: .8; }
+  /* 下载版本标注：静态写死保证可见，JS 再从 stats.json 同步为实际版本 */
+  .ver { color: var(--ink-2); font-size: 13px; margin: 14px 0 0; }
+  .ver b { color: var(--accent); }
 
   .demo { text-align: center; }
   .switch { display: inline-flex; gap: 8px; margin-bottom: 16px; }
@@ -90,8 +93,9 @@
     <p class="lede">一只趴在键盘上的桌面宠物。猫咪和像素八爪鱼，随时切换。</p>
     <a class="btn" id="dl" href="https://github.com/yellowsonpower/KeyCat/releases/latest/download/KeyCat-Windows-Setup.exe">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16"/></svg>
-      <span>直接下载 Windows 版<small>Windows 10/11 · 64 位 · 免费</small></span>
+      <span>直接下载 Windows 版<small id="dl-sub">v1.0.5 · Windows 10/11 · 64 位 · 免费</small></span>
     </a>
+    <p class="ver">当前版本 <b id="dl-ver">v1.0.5</b><span id="dl-date"> · 2026-11-26 发布</span> · 像素腿八爪鱼</p>
   </div>
 
   <div class="demo">
@@ -140,6 +144,19 @@
   const frame = $('pet'), stage = $('stage');
   const cat = () => frame.contentWindow && frame.contentWindow.cat;
   let creature = 'octopus';
+
+  // 下载版本从 stats.json 读取，和 release 保持一致；失败就保留页面里的静态标注。
+  fetch('stats.json').then(r => r.ok ? r.json() : null).then(s => {
+    if (!s || !s.version) return;
+    $('dl-ver').textContent = s.version;
+    $('dl-sub').firstChild.textContent = s.version + ' · ';
+    if (s.published) {
+      const d = new Date(s.published);
+      $('dl-date').textContent = ' · ' + d.getUTCFullYear() + '-' +
+        String(d.getUTCMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getUTCDate()).padStart(2, '0') + ' 发布';
+    }
+  }).catch(() => {});
 
   // iframe 与本页面同源，加载后把默认生物设成八爪鱼（本项目卖点）。
   frame.addEventListener('load', () => {

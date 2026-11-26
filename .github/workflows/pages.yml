@@ -53,3 +53,4 @@ jobs:
 
       - id: deploy
         uses: actions/deploy-pages@v5
+# v1.0.5 released

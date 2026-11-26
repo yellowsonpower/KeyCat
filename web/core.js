@@ -69,10 +69,40 @@ const K = {};
   camera.lookAt(ANCHOR);
   Object.assign(K, { renderer, scene, camera, FRAME, CROP });
 
+  // ---- v1.0.5 改动：像素锯齿边缘 -------------------------------------------
+  // 做法：先把场景画进 1/3 分辨率的 RenderTarget，再用最近邻(Nearest)放大铺满屏幕。
+  // 只作用于渲染输出，不改任何生物 / 行为代码。'?nopixel' 或 K.setPixelEdges(false) 可关闭。
+  const pxTarget = new THREE.WebGLRenderTarget(1, 1, {
+    minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true
+  });
+  const pxScene = new THREE.Scene();
+  const pxCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  // transparent 保持 false：texture 的 alpha 会被原样写入，没物体的地方依旧透明（桌宠是透明窗口）。
+  pxScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2),
+    new THREE.MeshBasicMaterial({ map: pxTarget.texture })));
+  let pixelEdges = !params.has('nopixel');
+  K.setPixelEdges = on => { pixelEdges = !!on; };
+  K.getPixelEdges = () => pixelEdges;
+  function sizePxTarget() {
+    const dpr = renderer.getPixelRatio();
+    pxTarget.setSize(Math.max(1, Math.round(innerWidth * dpr / 3)),
+                     Math.max(1, Math.round(innerHeight * dpr / 3)));
+  }
+  // 只渲染主场景时走锯齿；渲染 pxScene 自己时走原路，避免递归。
+  const origRender = renderer.render.bind(renderer);
+  renderer.render = (s, c) => {
+    if (!pixelEdges || s !== scene) return origRender(s, c);
+    renderer.setRenderTarget(pxTarget);
+    origRender(scene, camera);
+    renderer.setRenderTarget(null);
+    origRender(pxScene, pxCam);
+  };
+
   K.resize = () => {
     const w = window.innerWidth, h = window.innerHeight;
     renderer.setSize(w, h, false);
     camera.setViewOffset(FRAME.w, FRAME.h, CROP.x + FRAME.w / 2 - AIM.x, CROP.y + FRAME.h / 2 - AIM.y, CROP.w, CROP.h);
+    sizePxTarget();
   };
   window.addEventListener('resize', K.resize);
   K.resize();

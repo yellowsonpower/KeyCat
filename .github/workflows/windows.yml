@@ -57,10 +57,9 @@ jobs:
           if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
             npm run dist
           else
-            if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-              echo "TAURI_SIGNING_PRIVATE_KEY is required to publish a release" >&2
-              exit 1
-            fi
+            # Fork has no signing secret: still build an unsigned installer so releases can ship.
+            # Updater artifacts (latest.json/latest.yml) are skipped in that case.
+            echo "No signing key: building unsigned installer (in-app auto-update disabled)."
             npm run dist -- --config '{"bundle":{"createUpdaterArtifacts":false}}'
           fi
 
@@ -106,7 +105,10 @@ jobs:
         run: |
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
             || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
-          gh release upload "$GITHUB_REF_NAME" out/KeyCat-Windows-Setup.exe out/latest.json out/latest.yml --clobber
+          # Always upload the installer; updater manifests only exist when signed.
+          files="out/KeyCat-Windows-Setup.exe"
+          for f in out/latest.json out/latest.yml; do [ -f "$f" ] && files="$files $f"; done
+          gh release upload "$GITHUB_REF_NAME" $files --clobber
 
       - uses: actions/upload-artifact@v4
         with:

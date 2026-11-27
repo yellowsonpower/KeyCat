@@ -107,6 +107,41 @@ const K = {};
   window.addEventListener('resize', K.resize);
   K.resize();
 
+  // dev 专用控制面板：可视化切换「锯齿边缘」和「猫/八爪鱼」，正式发布（无 ?dev）不显示。
+  // 放在渲染层，是因为锯齿开关就在这里；生物切换点击时才用到 window.cat（那时 behavior.js 已加载）。
+  if (K.dev) {
+    const bar = document.createElement('div');
+    bar.style.cssText = 'position:fixed;left:10px;top:10px;z-index:9999;display:flex;gap:6px;font:13px "Microsoft YaHei";';
+    const btnStyle = 'cursor:pointer;padding:5px 10px;border:1px solid #a75ce8;border-radius:5px;background:#6d2fb5;color:#fff;';
+
+    // 锯齿边缘开关按钮：点一下切换，文字同步显示当前状态。
+    const pxBtn = document.createElement('button');
+    pxBtn.style.cssText = btnStyle;
+    const syncPx = () => { pxBtn.textContent = '锯齿边缘：' + (K.getPixelEdges() ? '开' : '关'); };
+    pxBtn.onclick = () => { K.setPixelEdges(!K.getPixelEdges()); syncPx(); };
+    syncPx();
+
+    // 生物切换按钮：猫 <-> 八爪鱼，方便直接看八爪鱼的锯齿效果。
+    const crBtn = document.createElement('button');
+    crBtn.style.cssText = btnStyle;
+    const syncCr = () => { crBtn.textContent = '生物：' + (K.currentCreatureId() === 'octopus' ? '八爪鱼' : '猫'); };
+    crBtn.onclick = () => {
+      window.cat.setCreature(K.currentCreatureId() === 'octopus' ? 'cat' : 'octopus');
+      syncCr();
+    };
+
+    bar.append(pxBtn, crBtn);
+    document.body.appendChild(bar);
+
+    // 启动完成后同步一次生物文字；若带 ?creature=octopus 则默认切到八爪鱼。
+    // 延后到宏任务末尾，确保所有脚本（含 behavior.js）都已执行完。
+    setTimeout(() => {
+      const want = new URLSearchParams(location.search).get('creature');
+      if (want === 'octopus' || want === 'cat') window.cat.setCreature(want);
+      syncCr();
+    }, 100);
+  }
+
   // The top of an arm is pushed back in depth, fading out down the upper arm, so the shoulder sits
   // behind the chest and the collar and the arm seems to grow out of the body. The vertex keeps
   // its place on screen: scaling a view-space point towards the eye only changes its depth.

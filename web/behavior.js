@@ -611,11 +611,19 @@
         window.cat.reset();
       }
       Object.assign(opts, o);
+      // 右键菜单的「锯齿边缘（像素风）」开关：只在显式传来布尔值时设置，
+      // 避免普通 options 推送把 dev 预览里的开关状态覆盖掉。
+      if (typeof o.pixelEdges === 'boolean') K.setPixelEdges(o.pixelEdges);
       // `tune` holds only the settings that differ from the defaults, so start from those.
       if (o.tune) {
         for (const g of TUNING_SCHEMA) for (const it of g.items) TUNING[it.key] = it.key in o.tune ? o.tune[it.key] : it.def;
       }
-      cat.setLook(Object.fromEntries(Object.entries(o).filter(([k]) => k in cat.look)));
+      // setLook 只收 cat.look 里有的键：猫的 look 无 hue/light，八爪鱼有。
+      // 右键菜单推来 octoHue/octoLight，转成八爪鱼认识的 hue/light 一起传进去。
+      const lookUpdate = Object.fromEntries(Object.entries(o).filter(([k]) => k in cat.look));
+      if (typeof o.octoHue === 'number') lookUpdate.hue = o.octoHue;
+      if (typeof o.octoLight === 'number') lookUpdate.light = o.octoLight;
+      cat.setLook(lookUpdate);
       S.busyUntil = now() + 1;
     },
     sleepNow() { S.asleep = true; S.lastInput = now() - opts.sleepAfter; },

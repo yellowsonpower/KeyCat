@@ -128,10 +128,12 @@
 
   // 腮红材质：behavior 会改 opacity（八爪鱼默认不显示，留接口）
   const blushMat = new THREE.MeshBasicMaterial({ color: '#f08a8a', transparent: true, opacity: 0, depthTest: false });
-  const look = { blush: false };
+
+  const look = { blush: false, hue: 0, light: 0 };
   function setLook(o) {
     Object.assign(look, o);
     blushMat.opacity = look.blush ? 0.35 : 0;
+    applyColor();
   }
 
   // 假耳朵：八爪鱼没有耳朵，但 behavior 每帧读 cat.ears 做"好奇竖起/被摸放平"。
@@ -186,6 +188,37 @@
       spot.userData = { at: 0.2 + rnd() * 0.6, angle: rnd() * Math.PI * 2 };
       body.add(spot);
       tentacles[tentacles.length - 1].spots.push(spot);
+    }
+  }
+
+  // ---- 滑动换色 ----
+  // 此刻全身网格（头、斑纹、眼睛、耳朵、8 条腿及腿上斑点）都已建好，
+  // 遍历 body 收集所有紫系材质，记下原始 HSL；滑动时统一加一个色相偏移，
+  // 深浅层次（主色/深色/斑纹/阴影）都保留，只是整体从紫滑到蓝/粉/绿/橙等。
+  // 瞳孔、白高光、腮红是中性色，排除在外，保持不变。
+  const neutralMats = new Set([pupilMat, glintMat, blushMat]);
+  const hueMats = [];
+  {
+    const seen = new Set();
+    body.traverse(obj => {
+      const m = obj.material;
+      if (!m || !m.color || neutralMats.has(m) || seen.has(m)) return;
+      seen.add(m);
+      const hsl = { h: 0, s: 0, l: 0 };
+      m.color.getHSL(hsl);
+      hueMats.push({ mat: m, hex: m.color.getHex(), h: hsl.h, s: hsl.s, l: hsl.l });
+    });
+  }
+  // 统一应用色相 + 明暗偏移。
+  // look.hue: 色相角度，0 = 原始紫色；正数往红→黄→绿方向，负数往蓝方向。
+  // look.light: 明度偏移，-0.5~+0.5；负变暗、正变亮，0 = 原亮度。
+  // 两者都靠原始 HSL 重算，深浅层次保留；都为 0 时用原 hex 精确还原。
+  function applyColor() {
+    const shift = ((look.hue % 360) + 360) % 360 / 360;
+    const light = look.light || 0;
+    for (const e of hueMats) {
+      if (!shift && !light) { e.mat.color.setHex(e.hex); continue; }
+      e.mat.color.setHSL((e.h + shift) % 1, e.s, clamp(e.l + light, 0.02, 0.98));
     }
   }
 
@@ -388,4 +421,15 @@
     updateArm, updateTail, setLook, look,
     squintOnCurious: true,  // 好奇时眯眼（近视使劲看清），不沿用猫的瞪大圆眼
   });
+
+  // dev 预览：?hue=120&light=-0.1 直接设初始配色，方便截图对比（正式版无这些参数不受影响）。
+  // 放在注册之后、此处所有材质已建好，避免访问尚未初始化的 hueMats。
+  if (K.dev) {
+    const p = new URLSearchParams(location.search);
+    const h = Number(p.get('hue'));
+    const l = Number(p.get('light'));
+    if (Number.isFinite(h) && h !== 0) look.hue = h;
+    if (Number.isFinite(l) && l !== 0) look.light = l;
+    if (look.hue || look.light) applyColor();
+  }
 })();

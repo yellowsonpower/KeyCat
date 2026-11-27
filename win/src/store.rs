@@ -1,7 +1,7 @@
 //! A tiny JSON-backed settings store. Keys mirror the mac build's UserDefaults names so the two
-//! versions are easy to compare: catScale, style, coat, pattern.<coat>, eyeColor, eyeShine, blush,
-//! whiskers, collar, privacy, clickThrough, sleepAfter, tune, originX, originY. runAsAdmin is
-//! Windows-only.
+//! versions are easy to compare: catScale, style, pixelEdges, octoHue, octoLight, coat,
+//! pattern.<coat>, eyeColor, eyeShine, blush, whiskers, collar, privacy, clickThrough, sleepAfter,
+//! tune, originX, originY. runAsAdmin is Windows-only.
 use std::fs;
 use std::path::PathBuf;
 

@@ -130,7 +130,44 @@ const K = {};
       syncCr();
     };
 
-    bar.append(pxBtn, crBtn);
+    // 八爪鱼换色滑块：色相 0-360 度 + 明暗 -0.5~+0.5，实时看效果（仅 dev 预览用）。
+    const colorWrap = document.createElement('div');
+    colorWrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+    const row = (label, min, max, step, val, fmt) => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;align-items:center;gap:6px;';
+      const lab = document.createElement('span');
+      lab.textContent = label;
+      const range = document.createElement('input');
+      range.type = 'range';
+      range.min = String(min); range.max = String(max); range.step = String(step); range.value = String(val);
+      range.style.cssText = 'width:160px;';
+      const out = document.createElement('span');
+      out.textContent = fmt(val);
+      wrap.append(lab, range, out);
+      return { wrap, range, out };
+    };
+    const hue = row('八爪鱼色相：', 0, 360, 1, 0, v => v + '°');
+    const light = row('八爪鱼明暗：', -0.4, 0.15, 0.05, 0, v => (v > 0 ? '+' : '') + v);
+    // 走正式的 options 链路，和右键菜单将来调用的方式一致（options 内部转给 setLook）。
+    const syncColor = () => {
+      if (window.cat && window.cat.options) {
+        window.cat.options({ hue: Number(hue.range.value), light: Number(light.range.value) });
+      }
+    };
+    hue.range.oninput = () => { hue.out.textContent = hue.range.value + '°'; syncColor(); };
+    light.range.oninput = () => {
+      const v = Number(light.range.value);
+      light.out.textContent = (v > 0 ? '+' : '') + v;
+      syncColor();
+    };
+    colorWrap.append(hue.wrap, light.wrap);
+
+    bar.style.flexDirection = 'column';
+    const topRow = document.createElement('div');
+    topRow.style.cssText = 'display:flex;gap:6px;';
+    topRow.append(pxBtn, crBtn);
+    bar.append(topRow, colorWrap);
     document.body.appendChild(bar);
 
     // 启动完成后同步一次生物文字；若带 ?creature=octopus 则默认切到八爪鱼。

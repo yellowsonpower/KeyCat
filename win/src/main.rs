@@ -96,6 +96,9 @@ struct Host {
 struct Settings {
     creature: String,
     style: String,
+    pixel_edges: bool,
+    octo_hue: f64,
+    octo_light: f64,
     coat: String,
     pattern: String,
     eye: String,
@@ -125,6 +128,11 @@ impl Host {
         Settings {
             creature: text("creature", "cat"),
             style: text("style", "2d"),
+            // 锯齿边缘默认开；只有显式存了 false 才关。
+            pixel_edges: self.store.get("pixelEdges") != Some(&Value::Bool(false)),
+            // 八爪鱼配色：色相角度 0-360、明暗 -0.4~0.15，默认都是 0（原紫色）。
+            octo_hue: number("octoHue").unwrap_or(0.0),
+            octo_light: number("octoLight").unwrap_or(0.0),
             pattern: text(&format!("pattern.{coat}"), "auto"),
             eye: text("eyeColor", "auto"),
             shine: text("eyeShine", "classic"),
@@ -200,6 +208,9 @@ fn push_options(app: &AppHandle) {
     let options = json!({
         "creature": s.creature,
         "style": s.style,
+        "pixelEdges": s.pixel_edges,
+        "octoHue": s.octo_hue,
+        "octoLight": s.octo_light,
         "coat": s.coat,
         "pattern": s.pattern,
         "eye": s.eye,
@@ -663,8 +674,34 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
         ("猫咪", json!("cat")),
         ("像素八爪鱼", json!("octopus")),
     ])?)?];
+    // 八爪鱼配色：原生菜单没有滑块，用离散档位逼近色相滑动（每 30° 一档）+ 明暗四档。
+    // 选中项存进 store（set:octoHue=... / set:octoLight=...），重启后保持。
+    items.push(submenu(app, "八爪鱼配色", vec![
+        submenu(app, "色相", choice(app, "octoHue", &json!(s.octo_hue), &[
+            ("原紫", json!(0.0)),
+            ("玫红", json!(30.0)),
+            ("红色", json!(60.0)),
+            ("橙色", json!(90.0)),
+            ("黄色", json!(120.0)),
+            ("黄绿", json!(150.0)),
+            ("绿色", json!(180.0)),
+            ("青绿", json!(210.0)),
+            ("青色", json!(240.0)),
+            ("蓝色", json!(270.0)),
+            ("靛蓝", json!(300.0)),
+            ("紫红", json!(330.0)),
+        ])?)?,
+        submenu(app, "明暗", choice(app, "octoLight", &json!(s.octo_light), &[
+            ("更暗", json!(-0.3)),
+            ("稍暗", json!(-0.15)),
+            ("正常", json!(0.0)),
+            ("稍亮", json!(0.1)),
+        ])?)?,
+    ])?);
     items.push(separator(app)?);
     items.push(check(app, format!("set:style={}", json!(if s.style == "3d" { "2d" } else { "3d" })), "立体效果（3D）", s.style == "3d")?);
+    // 锯齿边缘（低像素风）：默认开，点一下存 false（toggle 辅助会存 !on）。
+    items.push(toggle(app, "锯齿边缘（像素风）", "pixelEdges", s.pixel_edges)?);
     items.push(submenu(
         app,
         "毛色",

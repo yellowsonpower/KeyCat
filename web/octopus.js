@@ -153,6 +153,10 @@
   // 每环多一列重复顶点（原为噪点纹理的 uv 封口）。几何索引已按 RING 算好，
   // 现在纹理去掉了也保留，避免动已跑通的圆管构造。
   const RING = RAD + 1;
+  // 第 2 条腿（a 手后方那条）稍微加深：用介于 SKIN 亮紫与 SKIN_DARK 之间的紫。
+  // 其余腿仍按奇偶深浅交替。
+  const LEG2 = 0xb266e6;
+  const legColor = i => i === 2 ? LEG2 : (i % 2 ? SKIN_DARK : SKIN);
   const tentacles = [];
   for (let i = 0; i < TENT; i++) {
     const geo = new THREE.BufferGeometry();
@@ -172,7 +176,7 @@
       idx.push(a, b, c, b, d, c);
     }
     geo.setIndex(idx);
-    const mesh = new THREE.Mesh(geo, tentMat(i % 2 ? SKIN_DARK : SKIN));
+    const mesh = new THREE.Mesh(geo, tentMat(legColor(i)));
     mesh.frustumCulled = false;
     // 触手挂在 body 上，跟随身体倾斜，但末端摆动在世界空间计算（下面用 body 逆变换）
     body.add(mesh);

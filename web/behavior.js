@@ -235,8 +235,17 @@
       hz = 5;
     } else if (t - S.lastKey < 1.2) {
       // While typing, the free paw curls up against the side of the belly.
-      target = cat.attach(tmp2.set(paw.side * 0.55, 0.6, 0.44), tmp);
-      hz = 3.6;
+      // 八爪鱼：猫的"蜷到胸前"点太靠近肩部，长触手用贝塞尔去够会卷成勾状、很怪，
+      // 改成像休息时一样自然垂到键盘边（不蜷缩）。猫保持原来的蜷缩动作。
+      if (K.currentCreatureId() === 'octopus') {
+        const arm = cat.arms[paw.side < 0 ? 0 : 1];
+        cat.attach(arm.shoulderLocal, arm.shoulder);
+        target = tmp.set(arm.shoulder.x + paw.side * 0.02, 0.26, 0.68);
+        hz = 2.4;
+      } else {
+        target = cat.attach(tmp2.set(paw.side * 0.55, 0.6, 0.44), tmp);
+        hz = 3.6;
+      }
     } else {
       // At rest both paws hang straight down onto the far edge of the keyboard.
       const arm = cat.arms[paw.side < 0 ? 0 : 1];
